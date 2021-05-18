@@ -56,7 +56,6 @@ num_treb_granja = 750
 # Servicios
 serveis = ('Corte de pelo','Baño','Paseo','Limpieza de dientes','Corte de uñas','Lavado de pelo','Medicina Preventiva','Analitica de Sangre','Radiologia Digital','Ecografia','Obstetricia','Medicina Interna','Dermatologia','Cirugia')
 professional = ('Peluqueria','Peluqueria','Paseador','Estetica','Estetica','Peluqueria','Veterinaria','Veterinaria','Veterinaria','Veterinaria','Veterinaria','Veterinaria','Veterinaria','Veterinaria')
-#num_serveis = 20000
 num_serveis_doms = 15000
 num_serveis_granja = 5000
 
@@ -64,7 +63,7 @@ num_serveis_granja = 5000
 num_qtat_producte = 5000
 
 # Producte_especie
-num_prod_esp = 7500
+num_prod_esp = 8000
 
 
 def r(lim):
@@ -510,10 +509,10 @@ def create_treballador_botiga(cur):
     cognoms = cognom1+space+cognom2
 
     # Codi empleat
-    codi1 = cognom1[:2]
-    codi2 = cognom2[:2]
-    codi = randint(1000,9999)
-    codiempleat = codi1+codi2+guion+str(codi)
+    codi1 = cognom1[:2].lower()
+    codi2 = cognom2[:2].lower()
+    codi = randint(100000,999999)
+    codiempleat = codi1+codi2+guion+str(codi).lower()
 
     # Especializacio
     randesp = randint(0,3)
@@ -562,9 +561,9 @@ def create_treballador_granja(cur):
     cognoms = cognom1+space+cognom2
 
     # Codi empleat
-    codi1 = cognom1[:2]
-    codi2 = cognom2[:2]
-    codi = randint(1000,9999)
+    codi1 = cognom1[:2].lower()
+    codi2 = cognom2[:2].lower()
+    codi = randint(100000,999999)
     codiempleat = codi1+codi2+guion+str(codi)
 
     # Especializacio
@@ -585,59 +584,8 @@ def create_treballador_granja(cur):
       print("Error inserting (%s, %s, %s, %s, %s, %s). Error information: %s" % (codiempleat, nom, cognoms, especialitzacio, telefon, granja, e))
     conn.commit()
 
-'''
-################ 12 SERVEI
-def create_servei(cur):
-  print("%d services will be inserted." % num_serveis)
-  cur.execute("DROP TABLE IF EXISTS servei CASCADE")
-  cur.execute("""CREATE TABLE servei 
-  (referencia VARCHAR(15) PRIMARY KEY NOT NULL, 
-  nom VARCHAR(20) NOT NULL, 
-  preu VARCHAR(5) NOT NULL, 
-  data_realitzacio DATE NOT NULL,
-  UNIQUE(referencia,nom))""")
 
-  for i in range(num_serveis):
-    print(i+1, end = '\r')
-
-    # Nombre servicio
-    randservei = randint(0,13)
-    nom = serveis[randservei]
-
-    # Precios
-    if professional[randservei] == "Veterinaria":
-      preu1 = randint(60,100)
-    elif professional[randservei] == "Peluqueria":
-      preu1 = randint(15,40)
-    elif professional[randservei] == "Paseador":
-      preu1 = randint(10,25)
-    elif professional[randservei] == "Estetica":
-      preu1 = randint(20,40)
-
-    # Fecha realización
-    data_realitzacio = fake.date_time_between(start_date="-3y", end_date="now")
-
-    # Referencia
-    t = data_realitzacio
-    t2 = t.strftime('%Y/%m/&d')
-    codi1 = t2[:4]
-    codi2 = nom[:2]
-    codi3 = randint(1000000,9999999)
-    guion = "-"
-    referencia = codi2+guion+str(codi1)+guion+str(codi3)
-
-    # Precio
-    eur = "€"
-    preu = str(preu1)+eur
-    try:
-      cur.execute("INSERT INTO servei VALUES ('%s', '%s', '%s', '%s')" % (referencia, nom, preu, data_realitzacio))
-    except psycopg2.IntegrityError as e:
-      conn.rollback()
-      print("Error inserting (%s, %s, %s, %s). Error information: %s" % (referencia, nom, preu, data_realitzacio, e))
-    conn.commit()
-'''
-
-################ 13 SERVEI DOMÈSTIC
+################ 12 SERVEI DOMÈSTIC
 def create_servei_dom(cur):
   print("%d home services will be inserted." % num_serveis_doms)
   
@@ -679,17 +627,21 @@ def create_servei_dom(cur):
       preu1 = randint(20,40)
 
 
-    # Treballador
+    # Trabajador
     cur.execute("SELECT codiempleat FROM treballador_botiga WHERE especialitzacio='%s' ORDER BY RANDOM() LIMIT 1" % (especialitat))
     treballador = cur.fetchone()[0]
 
+    # Tienda del trabajador y del animal...
+    cur.execute("SELECT botiga FROM treballador_botiga WHERE codiempleat = '%s'" % (treballador))
+    botiga = cur.fetchone()[0]
+
+    # Animal
+    cur.execute("SELECT numxip FROM animal_domestic WHERE id_botiga = '%s' ORDER BY RANDOM() LIMIT 1" % (botiga))
+    xip_animal = cur.fetchone()[0]
+    
     # Fecha realización
     data_realitzacio = fake.date_time_between(start_date="-3y", end_date="now")
 
-    # Animal
-    cur.execute("SELECT numxip FROM animal_domestic ORDER BY RANDOM() LIMIT 1")
-    xip_animal = cur.fetchone()[0]
-    
     # Referencia
     t = data_realitzacio
     t2 = t.strftime('%Y/%m/&d')
@@ -712,7 +664,7 @@ def create_servei_dom(cur):
     conn.commit()
 
 
-################ 14 SERVEI GRANJA
+################ 13 SERVEI GRANJA
 def create_servei_granja(cur):
   print("%d farm services will be inserted." % num_serveis_granja)
   cur.execute("DROP TABLE IF EXISTS servei_granja CASCADE")
@@ -736,18 +688,6 @@ def create_servei_granja(cur):
 
   for i in range(num_serveis_granja):
     print(i+1, end = '\r')
-    
-    # Referencia
-    '''cur.execute("SELECT referencia FROM servei ORDER BY RANDOM() LIMIT 1")
-    referencia = cur.fetchone()[0]
-
-    # Sólo servicios de veterinaria
-    codiref = referencia[:2]
-
-    while codiref == "Co" or codiref == "Ba" or codiref == "Pa" or codiref == "Li" or codiref == "La":
-      cur.execute("SELECT referencia FROM servei ORDER BY RANDOM() LIMIT 1")
-      referencia = cur.fetchone()[0]
-      codiref = referencia[:2]'''
 
     # Nombre servicio
     randservei = randint(5,13)
@@ -763,8 +703,12 @@ def create_servei_granja(cur):
     cur.execute("SELECT codiempleat FROM treballador_granja WHERE especialitzacio='Veterinaria' ORDER BY RANDOM() LIMIT 1")
     treballador = cur.fetchone()[0]
 
+    # Granja del treballador i del animal...
+    cur.execute("SELECT granja FROM treballador_granja WHERE codiempleat = '%s'" % (treballador))
+    granja = cur.fetchone()[0]
+
     # Animal
-    cur.execute("SELECT numxip FROM animal_granja ORDER BY RANDOM() LIMIT 1")
+    cur.execute("SELECT numxip FROM animal_granja WHERE granja = '%s' ORDER BY RANDOM() LIMIT 1" % (granja))
     xip_animal = cur.fetchone()[0]
 
     # Referencia
@@ -785,7 +729,7 @@ def create_servei_granja(cur):
     conn.commit()
 
 
-################ 15 QTAT PRODUCTE
+################ 14 QTAT PRODUCTE
 def create_qtat_producte(cur):
   print("%d qtat producte will be inserted." % num_qtat_producte)
   cur.execute("DROP TABLE IF EXISTS qtat_producte CASCADE")
@@ -822,10 +766,10 @@ def create_qtat_producte(cur):
 
 # Programa principal
 # Conexión servidor UPC
-conn = psycopg2.connect(host="ubiwan.epsevg.upc.edu", user="est_e7667734", password="dB.e7667734", dbname="est_e7667734", options="-c search_path=practica")
+# conn = psycopg2.connect(host="ubiwan.epsevg.upc.edu", user="est_e7667734", password="dB.e7667734", dbname="est_e7667734", options="-c search_path=practica")
 
 # Conexión en local
-#conn = psycopg2.connect(host="localhost", user="userdabd", password="dabd", dbname="dabd")
+conn = psycopg2.connect(host="localhost", user="userdabd", password="dabd", dbname="dabd")
 cur = conn.cursor()
 
 create_poblacions(cur)            # 1
@@ -839,9 +783,8 @@ create_animal_dom(cur)            # 8
 create_animal_gran(cur)           # 9
 create_treballador_botiga(cur)    # 10
 create_treballador_granja(cur)    # 11
-#create_servei(cur)               # 12
-create_servei_dom(cur)            # 13
-create_servei_granja(cur)         # 14
-create_qtat_producte(cur)         # 15
+create_servei_dom(cur)            # 12
+create_servei_granja(cur)         # 13
+create_qtat_producte(cur)         # 14
 
 cur.close()
